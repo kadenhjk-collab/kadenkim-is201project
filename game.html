@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tennis Reaction Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #2d5a27;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .navbar {
+            width: 100%;
+            background-color: #000;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .navbar a:hover {
+            color: #c8a84b;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #c8a84b;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            background-color: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        .arena {
+            width: 600px;
+            height: 400px;
+            background-color: #000;
+            border-radius: 20px;
+            margin: 0 auto;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .ball {
+            position: absolute;
+            font-size: 3rem;
+            cursor: pointer;
+            display: none;
+            z-index: 10;
+        }
+        .start-button {
+            background-color: #c8a84b;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .start-button:hover {
+            background-color: #b8943a;
+        }
+        .end-screen {
+            display: none;
+            text-align: center;
+        }
+        .end-screen h2 {
+            color: #c8a84b;
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        .end-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .play-again {
+            background-color: #c8a84b;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .play-again:hover {
+            background-color: #b8943a;
+        }
+        @media (max-width: 650px) {
+            .arena {
+                width: 90vw;
+                height: 300px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="tennis.html">← Back to Tennis Page</a>
+    </div>
+    <div class="container">
+        <h1>Tennis Reaction Test 🎾</h1>
+        <p class="subtitle">Click the tennis ball as fast as you can each time it appears! You have 20 seconds — the next ball appears only after you click the current one. How quick are your reflexes?</p>
+        <div class="hud" id="hud">
+            <div>Clicks: <span id="clicks">0</span></div>
+            <div>Time Left: <span id="time-left">20</span>s</div>
+            <div>Last: <span id="last-time">-</span></div>
+        </div>
+        <div class="arena" id="arena">
+            <button class="start-button" id="start-button">Press Start</button>
+        </div>
+        <div class="end-screen" id="end-screen">
+            <h2 id="average-time"></h2>
+            <p>Total Clicks: <span id="total-clicks"></span></p>
+            <p id="message"></p>
+            <button class="play-again" id="play-again">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const arena = document.getElementById('arena');
+        const startButton = document.getElementById('start-button');
+        const hud = document.getElementById('hud');
+        const clicksEl = document.getElementById('clicks');
+        const timeLeftEl = document.getElementById('time-left');
+        const lastTimeEl = document.getElementById('last-time');
+        const endScreen = document.getElementById('end-screen');
+        const averageTime = document.getElementById('average-time');
+        const totalClicks = document.getElementById('total-clicks');
+        const message = document.getElementById('message');
+        const playAgain = document.getElementById('play-again');
+
+        let clicks = 0;
+        let timeLeft = 20;
+        let reactionTimes = [];
+        let startTime;
+        let gameRunning = false;
+        let timerInterval;
+        let ballClickable = false;
+
+        startButton.addEventListener('click', startGame);
+
+        function startGame() {
+            clicks = 0;
+            timeLeft = 20;
+            reactionTimes = [];
+            gameRunning = true;
+            clicksEl.textContent = clicks;
+            timeLeftEl.textContent = timeLeft;
+            lastTimeEl.textContent = '-';
+            arena.innerHTML = 'Get ready...';
+            hud.style.display = 'flex';
+            startButton.style.display = 'none';
+            setTimeout(() => {
+                if (gameRunning) showBall();
+            }, 800);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timeLeftEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function showBall() {
+            if (!gameRunning) return;
+            ballClickable = true;
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.textContent = '🎾';
+            ball.style.display = 'block';
+            ball.style.left = Math.random() * (arena.offsetWidth - 60) + 'px';
+            ball.style.top = Math.random() * (arena.offsetHeight - 60) + 'px';
+            arena.innerHTML = '';
+            arena.appendChild(ball);
+            startTime = Date.now();
+            ball.addEventListener('click', ballClicked);
+        }
+
+        function ballClicked() {
+            if (!ballClickable) return;
+            ballClickable = false;
+            const ball = this;
+            ball.style.display = 'none';
+            const reactionTime = Date.now() - startTime;
+            clicks++;
+            reactionTimes.push(reactionTime);
+            clicksEl.textContent = clicks;
+            lastTimeEl.textContent = reactionTime + 'ms';
+            if (gameRunning) showBall();
+        }
+
+        function endGame() {
+            gameRunning = false;
+            clearInterval(timerInterval);
+            totalClicks.textContent = clicks;
+            if (clicks === 0) {
+                averageTime.textContent = "No clicks recorded.";
+                message.textContent = "You didn't click any balls! Try again.";
+            } else {
+                const avg = reactionTimes.reduce((a, b) => a + b) / reactionTimes.length;
+                averageTime.textContent = `Average: ${Math.round(avg)}ms`;
+                let msg;
+                if (avg < 250) {
+                    msg = "Elite reflexes! You could be a pro tennis player! 🏆";
+                } else if (avg < 350) {
+                    msg = "Great reaction time! You've got quick hands! 🎾";
+                } else if (avg < 500) {
+                    msg = "Solid reflexes! Keep training and you'll get faster! 🎾";
+                } else {
+                    msg = "Not bad for a beginner! Practice makes perfect! 🎾";
+                }
+                message.textContent = msg;
+            }
+            endScreen.style.display = 'block';
+            arena.style.display = 'none';
+            hud.style.display = 'none';
+        }
+
+        playAgain.addEventListener('click', () => {
+            endScreen.style.display = 'none';
+            arena.style.display = 'block';
+            startButton.style.display = 'inline-block';
+            arena.innerHTML = '<button class="start-button" id="start-button">Press Start</button>';
+            document.getElementById('start-button').addEventListener('click', startGame);
+        });
+    </script>
+</body>
+</html>
